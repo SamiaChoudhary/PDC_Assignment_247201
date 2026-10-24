@@ -1,25 +1,32 @@
 import java.util.concurrent.RecursiveAction;
+
 public class PortfolioThresholdTask extends RecursiveAction {
-    private final double[] assets;
-    private final int start, end;
-    private final double riskCap;
     private static final int THRESHOLD = 1000;
-    public PortfolioThresholdTask(double[] assets, int start, int end, double riskCap) {
-        this.assets = assets;
+    private final double[] assetValues;
+    private final int start;
+    private final int end;
+    private final double riskCap;
+    public PortfolioThresholdTask(double[] assetValues, int start, int end, double riskCap) {
+        this.assetValues = assetValues;
         this.start = start;
         this.end = end;
         this.riskCap = riskCap;
     }
     @Override
     protected void compute() {
-        if ((end - start) <= THRESHOLD) {
+        int length = end - start;
+        if (length <= THRESHOLD) {
             for (int i = start; i < end; i++) {
-                if (assets[i] > riskCap) {
-                    assets[i] = assets[i] * 1.05; 
-                }}    
-    } else {
-            int mid = (start + end) / 2;
-            PortfolioThresholdTask left = new PortfolioThresholdTask(assets, start, mid, riskCap);
-            PortfolioThresholdTask right = new PortfolioThresholdTask(assets, mid, end, riskCap);
-            invokeAll(left, right);
-}}}
+                if (assetValues[i] > riskCap) {
+                    // Apply 5% volatility stress-test penalty
+                    assetValues[i] *= 1.05;
+                }
+            }
+        } else {
+            int mid = start + (length / 2);
+            PortfolioThresholdTask leftTask = new PortfolioThresholdTask(assetValues, start, mid, riskCap);
+            PortfolioThresholdTask rightTask = new PortfolioThresholdTask(assetValues, mid, end, riskCap);
+            invokeAll(leftTask, rightTask);
+        }
+    }
+}
